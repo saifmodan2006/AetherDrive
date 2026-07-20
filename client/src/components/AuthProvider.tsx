@@ -4,8 +4,6 @@ import React, { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '../store/useAuthStore';
 
-const PUBLIC_ROUTES = ['/login', '/register'];
-
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
   const { user, loading, refreshSession, setLoading } = useAuthStore();
   const router = useRouter();
@@ -23,12 +21,13 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     if (loading) return;
 
-    const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
+    const isAuthRoute = ['/login', '/register'].includes(pathname);
+    const isShareRoute = pathname.startsWith('/share/');
 
-    if (!user && !isPublicRoute) {
+    if (!user && !isAuthRoute && !isShareRoute) {
       // Redirect unauthenticated users to login
       router.push('/login');
-    } else if (user && isPublicRoute) {
+    } else if (user && isAuthRoute) {
       // Redirect authenticated users away from login/register to dashboard
       router.push('/');
     }
