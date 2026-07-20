@@ -3,8 +3,8 @@ services:
     name: aetherdrive-backend
     runtime: node
     rootDir: server
-    buildCommand: npm install && node prisma/switch-to-postgres.js && npx prisma generate && npm run build
-    startCommand: node dist/index.js
+    buildCommand: if [ -d "server" ]; then cd server; fi && npm install && node prisma/switch-to-postgres.js && npx prisma generate && npm run build
+    startCommand: if [ -d "server" ]; then cd server; fi && node dist/index.js
     envVars:
       - key: PORT
         value: 10000
