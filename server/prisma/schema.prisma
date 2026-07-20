@@ -1,0 +1,139 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id             String            @id @default(uuid())
+  email          String            @unique
+  passwordHash   String?
+  name           String
+  avatarUrl      String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  memberships    WorkspaceMember[]
+  createdFolders Folder[]
+  createdFiles   File[]
+  fileVersions   FileVersion[]
+  fileShares     FileShare[]
+  comments       Comment[]
+  activityLogs   ActivityLog[]
+}
+
+model Workspace {
+  id           String            @id @default(uuid())
+  name         String
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  members      WorkspaceMember[]
+  folders      Folder[]
+  files        File[]
+  activityLogs ActivityLog[]
+}
+
+model WorkspaceMember {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        String    // "OWNER", "EDITOR", "COMMENTER", "VIEWER"
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([workspaceId, userId])
+}
+
+model Folder {
+  id          String      @id @default(uuid())
+  name        String
+  workspaceId String
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  parentId    String?
+  parent      Folder?     @relation("SubFolders", fields: [parentId], references: [id], onDelete: Cascade)
+  subFolders  Folder[]    @relation("SubFolders")
+  files       File[]
+  createdById String
+  createdBy   User        @relation(fields: [createdById], references: [id])
+  shares      FileShare[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model File {
+  id               String        @id @default(uuid())
+  name             String
+  mimeType         String
+  size             Int           // File size in bytes
+  workspaceId      String
+  workspace        Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  folderId         String?
+  folder           Folder?       @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  createdById      String
+  createdBy        User          @relation(fields: [createdById], references: [id])
+  currentVersionId String?
+  versions         FileVersion[]
+  shares           FileShare[]
+  comments         Comment[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+}
+
+model FileVersion {
+  id            String   @id @default(uuid())
+  fileId        String
+  file          File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  versionNumber Int
+  size          Int
+  fileKey       String   // Storage key or disk filepath
+  createdById   String
+  createdBy     User     @relation(fields: [createdById], references: [id])
+  createdAt     DateTime @default(now())
+}
+
+model FileShare {
+  id           String    @id @default(uuid())
+  fileId       String?
+  file         File?     @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  folderId     String?
+  folder       Folder?   @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  sharedById   String
+  sharedBy     User      @relation(fields: [sharedById], references: [id])
+  accessRole   String    // "EDITOR", "COMMENTER", "VIEWER"
+  isPublic     Boolean   @default(false)
+  shareToken   String    @unique @default(uuid())
+  passwordHash String?   // Exists if link is password-protected
+  expiresAt    DateTime? // Exists if link expires
+  createdAt    DateTime  @default(now())
+}
+
+model Comment {
+  id        String    @id @default(uuid())
+  fileId    String
+  file      File      @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  parentId  String?
+  parent    Comment?  @relation("Thread", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[] @relation("Thread")
+  content   String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model ActivityLog {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  actionType  String    // e.g. "FILE_UPLOAD", "FILE_DELETE", "SHARE_CREATE", "COMMENT_ADD"
+  targetType  String    // "FILE", "FOLDER", "COMMENT", etc.
+  targetId    String
+  details     String?   // JSON object detailing metadata
+  createdAt   DateTime  @default(now())
+}

@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# NextJS build files
+.next/
+**/client/.next/
+**/client/out/
+
+# Express build files
+dist/
+**/server/dist/
+
+# Local database and uploads
+**/server/prisma/dev.db
+**/server/prisma/dev.db-journal
+**/server/uploads/
+uploads/
+
+# Environment files (Secrets!)
+.env
+.env.local
+.env.production
+.env.development
+.env.test
+**/.env
+**/.env.local
+
+# Project Specific Ignored Files (As requested by User: "don't push this .md file")
+README_DEPLOY.md
+
+# OS/System logs
+.DS_Store
+*.log
+tsbuildinfo
